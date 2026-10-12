@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tappy Bird: Skybound Challenge | 2D Game Programming CA-2</title>
+  <meta name="description" content="A feature-complete 2D browser canvas game with physics, progressive levels, collision detection, and procedural audio for College Game Programming CA-2.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Main Game Shell Container -->
+  <div id="game-container">
+
+    <!-- Primary HTML5 2D Canvas -->
+    <canvas id="gameCanvas" width="480" height="640"></canvas>
+
+    <!-- In-Game Heads-Up Display (HUD) -->
+    <div id="hud" class="hidden">
+      <div class="hud-badge" id="hud-level-badge">
+        <span class="label">STAGE</span>
+        <span class="value" id="hud-level-val">1</span>
+      </div>
+
+      <div class="hud-badge">
+        <span class="label">SCORE</span>
+        <span class="value" id="hud-score-val">0</span>
+        <span style="color: var(--text-muted); font-size: 11px;">/</span>
+        <span class="value" id="hud-target-val" style="color: var(--accent-cyan);">10</span>
+      </div>
+
+      <div class="hud-right">
+        <button id="btn-audio-toggle" class="icon-btn" title="Toggle Sound (M)">🔊</button>
+        <button id="btn-pause-toggle" class="icon-btn" title="Pause Game (P)">⏸</button>
+      </div>
+    </div>
+
+    <!-- HUD Level Completion Progress Bar -->
+    <div id="hud-progress-wrap" class="hidden">
+      <div id="hud-progress-bar"></div>
+    </div>
+
+    <!-- 1. Main Menu Screen -->
+    <div id="screen-main-menu" class="screen-overlay">
+      <h1 class="game-title">Tappy Bird</h1>
+      <h2 class="game-subtitle">Skybound Challenge</h2>
+
+      <div class="stats-box" style="margin-bottom: 20px;">
+        <div class="stat-item">
+          <span class="label">Best High Score</span>
+          <span class="value" id="menu-best-score">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="label">Unlocked Stage</span>
+          <span class="value" id="menu-highest-level" style="color: var(--accent-emerald);">LVL 1</span>
+        </div>
+      </div>
+
+      <div class="btn-stack">
+        <button id="btn-play-now" class="btn btn-primary">▶ PLAY NOW</button>
+        <button id="btn-level-select" class="btn">🚀 LEVEL SELECT</button>
+        <button id="btn-how-to-play" class="btn">❓ HOW TO PLAY</button>
+      </div>
+
+      <p class="college-meta">CA-2 Game Programming • HTML5 Canvas Engine</p>
+    </div>
+
+    <!-- 2. Level Select Screen -->
+    <div id="screen-level-select" class="screen-overlay hidden">
+      <h3 class="card-title">Select Stage</h3>
+      <p class="card-subtitle">Choose your aerial challenge</p>
+
+      <div class="level-grid">
+        <!-- Stage 1 -->
+        <div class="level-card" data-level="1" id="card-level-1">
+          <div class="level-card-info">
+            <h4>Level 1 — Training Sky</h4>
+            <p>Gentle breeze • Static pipes • Target: 8 pts</p>
+          </div>
+          <span class="level-badge badge-easy">EASY</span>
+        </div>
+
+        <!-- Stage 2 -->
+        <div class="level-card" data-level="2" id="card-level-2">
+          <div class="level-card-info">
+            <h4>Level 2 — Storm Sky</h4>
+            <p>Rain & Gale • Oscillating pipes • Target: 12 pts</p>
+          </div>
+          <span class="level-badge badge-medium">MEDIUM</span>
+        </div>
+
+        <!-- Stage 3 -->
+        <div class="level-card" data-level="3" id="card-level-3">
+          <div class="level-card-info">
+            <h4>Level 3 — Nightmare Sky</h4>
+            <p>Night stars • AI Tracking gaps • Target: 15 pts</p>
+          </div>
+          <span class="level-badge badge-hard">HARD</span>
+        </div>
+      </div>
+
+      <button id="btn-back-from-levels" class="btn">⬅ Back to Menu</button>
+    </div>
+
+    <!-- 3. How to Play Screen -->
+    <div id="screen-how-to-play" class="screen-overlay hidden">
+      <h3 class="card-title">Flight Manual</h3>
+      <p class="card-subtitle">Syllabus Physics & Controls</p>
+
+      <div class="info-scroll-box">
+        <h5>🕹 Controls</h5>
+        <p><span class="key-badge">SPACE</span> or <span class="key-badge">CLICK / TAP</span> — Flap wings (Applies upward impulse force)</p>
+        <p><span class="key-badge">P</span> — Pause / Resume game simulation</p>
+        <p><span class="key-badge">ESC</span> — Back to main menu</p>
+
+        <h5>🎯 Objectives</h5>
+        <p>Navigate through pipe gap intervals to score points. Reach the target score to clear each stage!</p>
+
+        <h5>⚠️ Environmental Hazards</h5>
+        <p>• Avoid collisions with pipe structures.<br>
+           • Do not crash into the ground surface.<br>
+           • In Level 2 &amp; 3, watch out for vertically moving and predictive tracking obstacles!</p>
+
+        <h5>📐 Engine Mathematics</h5>
+        <p>Employs Cartesian $(X, Y)$ coordinates, 2D velocity vectors $\vec{v} = (v_x, v_y)$, Euler integration for gravity acceleration, and Circle-to-AABB bounding box collision checks.</p>
+      </div>
+
+      <button id="btn-back-from-instructions" class="btn btn-primary">Got It! Let's Fly</button>
+    </div>
+
+    <!-- 4. Pause Screen -->
+    <div id="screen-pause" class="screen-overlay hidden">
+      <h3 class="card-title">Game Paused</h3>
+      <p class="card-subtitle">Take a breath, pilot</p>
+
+      <div class="btn-stack">
+        <button id="btn-resume-game" class="btn btn-primary">▶ Resume Flight</button>
+        <button id="btn-restart-from-pause" class="btn">🔄 Restart Stage</button>
+        <button id="btn-levels-from-pause" class="btn">🚀 Select Level</button>
+        <button id="btn-menu-from-pause" class="btn">🏠 Main Menu</button>
+      </div>
+    </div>
+
+    <!-- 5. Game Over Screen -->
+    <div id="screen-game-over" class="screen-overlay hidden">
+      <h3 class="card-title" style="color: var(--accent-crimson);">Flight Terminated</h3>
+      <p class="card-subtitle" id="game-over-reason">Collision detected</p>
+
+      <div class="stats-box">
+        <div class="stat-item">
+          <span class="label">Stage Score</span>
+          <span class="value" id="game-over-score">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="label">Target Needed</span>
+          <span class="value" id="game-over-target" style="color: var(--accent-cyan);">10</span>
+        </div>
+      </div>
+
+      <div class="btn-stack">
+        <button id="btn-retry-stage" class="btn btn-primary">🔄 Try Again</button>
+        <button id="btn-levels-from-gameover" class="btn">🚀 Select Stage</button>
+        <button id="btn-menu-from-gameover" class="btn">🏠 Main Menu</button>
+      </div>
+    </div>
+
+    <!-- 6. Level Complete Screen -->
+    <div id="screen-level-complete" class="screen-overlay hidden">
+      <h3 class="card-title" style="color: var(--accent-emerald);">Stage Cleared!</h3>
+      <p class="card-subtitle" id="level-complete-desc">Target score achieved successfully</p>
+
+      <div class="stats-box">
+        <div class="stat-item">
+          <span class="label">Stage Score</span>
+          <span class="value" id="lvl-clear-score">10</span>
+        </div>
+        <div class="stat-item">
+          <span class="label">Flight Status</span>
+          <span class="value" style="color: var(--accent-emerald); font-size: 16px;">CLEARED</span>
+        </div>
+      </div>
+
+      <div class="btn-stack">
+        <button id="btn-next-stage" class="btn btn-primary">➡ Advance to Next Sky</button>
+        <button id="btn-replay-stage" class="btn">🔄 Replay Stage</button>
+        <button id="btn-menu-from-clear" class="btn">🏠 Main Menu</button>
+      </div>
+    </div>
+
+    <!-- 7. Final Victory Screen -->
+    <div id="screen-victory" class="screen-overlay hidden">
+      <h3 class="card-title" style="background: linear-gradient(135deg, #fcd34d, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+        🏆 SKYBOUND MASTER!
+      </h3>
+      <p class="card-subtitle">All 3 stages conquered with flying colors!</p>
+
+      <div class="stats-box">
+        <div class="stat-item">
+          <span class="label">Total Flaps Passed</span>
+          <span class="value" id="victory-total-score">45</span>
+        </div>
+        <div class="stat-item">
+          <span class="label">Record High</span>
+          <span class="value" id="victory-high-score">45</span>
+        </div>
+      </div>
+
+      <div class="btn-stack">
+        <button id="btn-play-again-victory" class="btn btn-primary">🔄 Fly Again From Level 1</button>
+        <button id="btn-menu-from-victory" class="btn">🏠 Main Menu</button>
+      </div>
+
+      <p class="college-meta">CA-2 Game Programming Project Submission</p>
+    </div>
+
+  </div>
+
+  <!-- JavaScript Game Engine Modules -->
+  <script src="js/audioManager.js"></script>
+  <script src="js/inputManager.js"></script>
+  <script src="js/scoreManager.js"></script>
+  <script src="js/collision.js"></script>
+  <script src="js/bird.js"></script>
+  <script src="js/obstacle.js"></script>
+  <script src="js/levelManager.js"></script>
+  <script src="js/uiManager.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+
+</body>
+</html>
